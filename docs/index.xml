@@ -10,7 +10,425 @@
 <atom:link href="https://your-website-url.example.com/index.xml" rel="self" type="application/rss+xml"/>
 <description>A blog built with Quarto</description>
 <generator>quarto-1.8.25</generator>
-<lastBuildDate>Wed, 28 Jan 2026 05:00:00 GMT</lastBuildDate>
+<lastBuildDate>Fri, 06 Feb 2026 05:00:00 GMT</lastBuildDate>
+<item>
+  <title>Big Tech Stock Prices</title>
+  <dc:creator>Honey Orser</dc:creator>
+  <link>https://your-website-url.example.com/posts/big-tech-stock-prices/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>In this blog, I am looking at the <a href="https://github.com/rfordatascience/tidytuesday/blob/ecf1b9a106523e4b786e53d2b2b0ff370b809408/data/2023/2023-02-07/readme.md">Big Tech Stock Prices</a> data set (originally sourced from <a href="https://www.kaggle.com/datasets/evangower/big-tech-stock-prices">Kaggle</a>), which is a comprehensive collection of the daily stock prices and volume of 14 different tech companies, including Apple, Amazon, and Meta. The data details how these tech giants fared from 2010 to 2022.</p>
+<p>My exploration is based around on the idea of risk vs.&nbsp;reward, and centers on the question: <strong>Which tech stocks are the most volatile, and how do their daily price distributions differ?</strong> To answer this, I am focusing on three primary variables:</p>
+<ul>
+<li><p><code>adj_close</code> is the closing price after adjustments for all applicable splits and dividend distributions, which I use to track the baseline value of the stocks.</p></li>
+<li><p><code>open</code> and <code>close</code> are the the price at market open and the price at market close (adjusted for splits), respectively, and I use them to calculate the daily percentage fluctuations that define volatility.</p></li>
+<li><p><code>stock_symbol</code> represents the full name of the associated company, which I need to group and compare trends and happenings across the companies in the data set.</p></li>
+</ul>
+<p>This is a fairly large data set, containing 45,088 observations. An important contextual note for the reader is that all companies have 3,271 prices, excepting Meta which has 2,688, and Tesla which has 3,148 because they were not publicly traded for part of the period examined in the data.</p>
+</section>
+<section id="visualizations" class="level2">
+<h2 class="anchored" data-anchor-id="visualizations">Visualizations</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> big_tech_stock_prices, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> date, </span>
+<span id="cb1-2">                                         <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> adj_close, </span>
+<span id="cb1-3">                                         <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> stock_symbol)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">show.legend =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">FALSE</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb1-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">facet_wrap</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span>stock_symbol) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">labs</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Big Tech Stock Performance Over Time"</span>,</span>
+<span id="cb1-7">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">subtitle =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Tracking adjusted closing prices."</span>,</span>
+<span id="cb1-8">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Year"</span>,</span>
+<span id="cb1-9">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Adjusted Closing Price ($)"</span>,</span>
+<span id="cb1-10">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">caption =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"**Figure 1:** This time-series analysis uses the *adj_close* variable to</span></span>
+<span id="cb1-11"><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">                  track appreciation across 14 tech companies."</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-12">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb1-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">plot.caption =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_markdown</span>()) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-14">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_color_paletteer_d</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">palette =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"vapeplot::vaporwave"</span>)</span></code></pre></div></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://your-website-url.example.com/posts/big-tech-stock-prices/index_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This visualization contextualizes the reward component of my analysis. By plotting the <em>adj_close</em> price, the resulting visual shows the actual wealth generated for stockholders over time (adjusted for all applicable splits and dividend distributions).</p>
+<p>Readers should notice that while the Big Tech stock market sector is often referenced as a whole, the growth trajectories of companies within the sector are actually very different. A key observation is the difference in trend stability; some companies maintain a steady and reliable trend of capital appreciation, while other companies show much more fluctuation with massive vertical spikes followed by corrections*. This visualization shows that all tech stocks don’t behave the same way; it’s the specific stock, not the general sector, that determines whether investors experience consistent gains or extreme volatility over time.</p>
+<p>*Note: Stock market corrections are generally defined as a drop in value of 10% or more from recent market highs.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">daily_return_data <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> big_tech_stock_prices <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|&gt;</span> </span>
+<span id="cb2-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">daily_change =</span> ((close <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> open) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> open) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span>,</span>
+<span id="cb2-3">         <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">abs_daily_change =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(daily_change))</span></code></pre></div></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> daily_return_data, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> stock_symbol,</span>
+<span id="cb3-2">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> daily_change,</span>
+<span id="cb3-3">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">fill =</span> stock_symbol)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_boxplot</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">outlier.shape =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">show.legend =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">FALSE</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">facet_wrap</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span>stock_symbol, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">scales =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"free"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">labs</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Daily Return Distributions by Stocks"</span>,</span>
+<span id="cb3-7">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">subtitle =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Outliers represent extreme market days."</span>,</span>
+<span id="cb3-8">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>,</span>
+<span id="cb3-9">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Daily Return (%)"</span>,</span>
+<span id="cb3-10">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">caption =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"**Figure 2:** This plot illustrates daily price volatility where the central</span></span>
+<span id="cb3-11"><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">       boxes represent typical behavior and the outliers identify shocks."</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-12">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">axis.text.x =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_blank</span>(),</span>
+<span id="cb3-14">        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">axis.ticks.x =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_blank</span>(),</span>
+<span id="cb3-15">        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">plot.caption =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_markdown</span>()) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-16">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_fill_paletteer_d</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">palette =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"vapeplot::vaporwave"</span>)</span></code></pre></div></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://your-website-url.example.com/posts/big-tech-stock-prices/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>To look at daily risk, I use faceted boxplots to visualize the distribution of daily returns (the percentage change from open to close). This visualization reveals the internal stability of these stocks. Each boxplot shows the range of a company’s typical daily gain or loss; the central boxes show where the price usually settles and the outliers represent extreme trading days. These are moments where the stock price moved significantly more than usual, indicating which companies are more prone to sudden price shocks.</p>
+<p>The key takeaway here is the consistency of the stock: a more compact box indicates a stable, predictable asset, while a wider box with a lot of outliers identifies a stock prone to sudden fluctuations in price. Readers should note that the scales for each panel are not the same across the grid – they are relative to each individual boxplot.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">sector_median <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">median</span>(daily_return_data<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>abs_daily_change, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">na.rm =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> daily_return_data, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">fct_reorder</span>(stock_symbol, abs_daily_change),</span>
+<span id="cb5-2">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> abs_daily_change,</span>
+<span id="cb5-3">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">fill =</span> stock_symbol)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_boxplot</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">outlier.shape =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">show.legend =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">FALSE</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_hline</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yintercept =</span> sector_median, </span>
+<span id="cb5-6">             <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">linetype =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, </span>
+<span id="cb5-7">             <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"red4"</span>, </span>
+<span id="cb5-8">             <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">size =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-9">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">labs</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Volatillity Ranking: Daily Price Fluctuations"</span>,</span>
+<span id="cb5-10">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Stock Symbol"</span>,</span>
+<span id="cb5-11">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Absolute Daily Return"</span>,</span>
+<span id="cb5-12">       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">caption =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"**Figure 3:** This comparative ranking uses the *fct_reorder* function to</span></span>
+<span id="cb5-13"><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">       sort tech companies by their median absolute daily return."</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-14">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coord_flip</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-15">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-16">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">plot.caption =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_markdown</span>()) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-17">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_fill_paletteer_d</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">palette =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"vapeplot::vaporwave"</span>)</span></code></pre></div></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://your-website-url.example.com/posts/big-tech-stock-prices/index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This final plot defines the risk ranking by sorting these companies based on their median absolute daily returns. The dashed line represents the sector median, marking the middle point of volatility for this group of companies to provide a clear point of reference for comparison.</p>
+<p>This visualization should enable readers to identify the sector’s stable points versus its more unpredictable points. Stocks further to the right of the dashed line (sector median) are objectively more volatile than others more to the left, so they require a higher risk tolerance. This ranking helps investors to see exactly where a company like Tesla (TSLA) or NVIDIA is on a scale of risk compared to established companies like Microsoft (MSFT) or Google (AAPL).</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>A potential flaw in my exploration is that I used <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bclose%20-%20open%7D%7Bopen%7D"> to calculate the daily return variable, but this only accounts for what happens with prices from open to close . The formula doesn’t consider what happens with prices when the market is closed, which could be significant.</p>
+<p>With additional data and more time, I would be interested in including additional data to support and contextualize the the adjusting closing price trends. This could include relevant news, social media mentions, and other supporting data that might help explain what else was going on during extreme market days (outliers in Figures 2 and 3) and <em>why</em> they happened.</p>
+</section>
+<section id="connection-to-class-ideas" class="level2">
+<h2 class="anchored" data-anchor-id="connection-to-class-ideas">Connection to Class Ideas</h2>
+<ul>
+<li><p><strong>Data-to-Ink Ratio:</strong> I aimed to minimize data-to-ink ratio in my visualizations by making the plots simple but informative, so they are better remembered and more enjoyable for viewers.</p></li>
+<li><p><strong>Appropriate Color Scales:</strong> I used a qualitative color scale to distinguish between companies because they are unordered categories.</p></li>
+</ul>
+
+
+</section>
+
+ ]]></description>
+  <category>code</category>
+  <category>analysis</category>
+  <guid>https://your-website-url.example.com/posts/big-tech-stock-prices/</guid>
+  <pubDate>Fri, 06 Feb 2026 05:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Post With Code</title>
   <dc:creator>Harlow Malloc</dc:creator>

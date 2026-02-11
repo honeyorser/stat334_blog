@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/big-tech-stock-prices/index.html",
       "/posts/post-with-code/index.html",
       "/posts/welcome/index.html"
     ]

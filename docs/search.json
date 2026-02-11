@@ -7,11 +7,39 @@
     "text": "About this blog"
   },
   {
-    "objectID": "posts/welcome/index.html",
-    "href": "posts/welcome/index.html",
-    "title": "Welcome To My Blog",
+    "objectID": "posts/big-tech-stock-prices/index.html",
+    "href": "posts/big-tech-stock-prices/index.html",
+    "title": "Big Tech Stock Prices",
     "section": "",
-    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
+    "text": "In this blog, I am looking at the Big Tech Stock Prices data set (originally sourced from Kaggle), which is a comprehensive collection of the daily stock prices and volume of 14 different tech companies, including Apple, Amazon, and Meta. The data details how these tech giants fared from 2010 to 2022.\nMy exploration is based around on the idea of risk vs. reward, and centers on the question: Which tech stocks are the most volatile, and how do their daily price distributions differ? To answer this, I am focusing on three primary variables:\n\nadj_close is the closing price after adjustments for all applicable splits and dividend distributions, which I use to track the baseline value of the stocks.\nopen and close are the the price at market open and the price at market close (adjusted for splits), respectively, and I use them to calculate the daily percentage fluctuations that define volatility.\nstock_symbol represents the full name of the associated company, which I need to group and compare trends and happenings across the companies in the data set.\n\nThis is a fairly large data set, containing 45,088 observations. An important contextual note for the reader is that all companies have 3,271 prices, excepting Meta which has 2,688, and Tesla which has 3,148 because they were not publicly traded for part of the period examined in the data."
+  },
+  {
+    "objectID": "posts/big-tech-stock-prices/index.html#introduction",
+    "href": "posts/big-tech-stock-prices/index.html#introduction",
+    "title": "Big Tech Stock Prices",
+    "section": "",
+    "text": "In this blog, I am looking at the Big Tech Stock Prices data set (originally sourced from Kaggle), which is a comprehensive collection of the daily stock prices and volume of 14 different tech companies, including Apple, Amazon, and Meta. The data details how these tech giants fared from 2010 to 2022.\nMy exploration is based around on the idea of risk vs. reward, and centers on the question: Which tech stocks are the most volatile, and how do their daily price distributions differ? To answer this, I am focusing on three primary variables:\n\nadj_close is the closing price after adjustments for all applicable splits and dividend distributions, which I use to track the baseline value of the stocks.\nopen and close are the the price at market open and the price at market close (adjusted for splits), respectively, and I use them to calculate the daily percentage fluctuations that define volatility.\nstock_symbol represents the full name of the associated company, which I need to group and compare trends and happenings across the companies in the data set.\n\nThis is a fairly large data set, containing 45,088 observations. An important contextual note for the reader is that all companies have 3,271 prices, excepting Meta which has 2,688, and Tesla which has 3,148 because they were not publicly traded for part of the period examined in the data."
+  },
+  {
+    "objectID": "posts/big-tech-stock-prices/index.html#visualizations",
+    "href": "posts/big-tech-stock-prices/index.html#visualizations",
+    "title": "Big Tech Stock Prices",
+    "section": "Visualizations",
+    "text": "Visualizations\n\nggplot(data = big_tech_stock_prices, aes(x = date, \n                                         y = adj_close, \n                                         color = stock_symbol)) +\n  geom_line(show.legend = FALSE) + \n  facet_wrap(~stock_symbol) +\n  labs(title = \"Big Tech Stock Performance Over Time\",\n       subtitle = \"Tracking adjusted closing prices.\",\n       x = \"Year\",\n       y = \"Adjusted Closing Price ($)\",\n       caption = \"**Figure 1:** This time-series analysis uses the *adj_close* variable to\n                  track appreciation across 14 tech companies.\") +\n  theme_minimal() + \n  theme(plot.caption = element_markdown()) +\n  scale_color_paletteer_d(palette = \"vapeplot::vaporwave\")\n\n\n\n\n\n\n\n\nThis visualization contextualizes the reward component of my analysis. By plotting the adj_close price, the resulting visual shows the actual wealth generated for stockholders over time (adjusted for all applicable splits and dividend distributions).\nReaders should notice that while the Big Tech stock market sector is often referenced as a whole, the growth trajectories of companies within the sector are actually very different. A key observation is the difference in trend stability; some companies maintain a steady and reliable trend of capital appreciation, while other companies show much more fluctuation with massive vertical spikes followed by corrections*. This visualization shows that all tech stocks don’t behave the same way; it’s the specific stock, not the general sector, that determines whether investors experience consistent gains or extreme volatility over time.\n*Note: Stock market corrections are generally defined as a drop in value of 10% or more from recent market highs.\n\ndaily_return_data &lt;- big_tech_stock_prices |&gt; \n  mutate(daily_change = ((close - open) / open) * 100,\n         abs_daily_change = abs(daily_change))\n\n\nggplot(data = daily_return_data, aes(x = stock_symbol,\n                                     y = daily_change,\n                                     fill = stock_symbol)) +\n  geom_boxplot(outlier.shape = 1, show.legend = FALSE) +\n  facet_wrap(~stock_symbol, scales = \"free\") +\n  labs(title = \"Daily Return Distributions by Stocks\",\n       subtitle = \"Outliers represent extreme market days.\",\n       x = NULL,\n       y = \"Daily Return (%)\",\n       caption = \"**Figure 2:** This plot illustrates daily price volatility where the central\n       boxes represent typical behavior and the outliers identify shocks.\") +\n  theme_minimal() +\n  theme(axis.text.x = element_blank(),\n        axis.ticks.x = element_blank(),\n        plot.caption = element_markdown()) +\n  scale_fill_paletteer_d(palette = \"vapeplot::vaporwave\")\n\n\n\n\n\n\n\n\nTo look at daily risk, I use faceted boxplots to visualize the distribution of daily returns (the percentage change from open to close). This visualization reveals the internal stability of these stocks. Each boxplot shows the range of a company’s typical daily gain or loss; the central boxes show where the price usually settles and the outliers represent extreme trading days. These are moments where the stock price moved significantly more than usual, indicating which companies are more prone to sudden price shocks.\nThe key takeaway here is the consistency of the stock: a more compact box indicates a stable, predictable asset, while a wider box with a lot of outliers identifies a stock prone to sudden fluctuations in price. Readers should note that the scales for each panel are not the same across the grid – they are relative to each individual boxplot.\n\nsector_median &lt;- median(daily_return_data$abs_daily_change, na.rm = TRUE)\n\n\nggplot(data = daily_return_data, aes(x = fct_reorder(stock_symbol, abs_daily_change),\n                                     y = abs_daily_change,\n                                     fill = stock_symbol)) +\n  geom_boxplot(outlier.shape = 1, show.legend = FALSE) +\n  geom_hline(yintercept = sector_median, \n             linetype = 2, \n             color = \"red4\", \n             size = 0.8) +\n  labs(title = \"Volatillity Ranking: Daily Price Fluctuations\",\n       x = \"Stock Symbol\",\n       y = \"Absolute Daily Return\",\n       caption = \"**Figure 3:** This comparative ranking uses the *fct_reorder* function to\n       sort tech companies by their median absolute daily return.\") +\n  coord_flip() +\n  theme_minimal() +\n  theme(plot.caption = element_markdown()) +\n  scale_fill_paletteer_d(palette = \"vapeplot::vaporwave\")\n\nWarning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.\nℹ Please use `linewidth` instead.\n\n\n\n\n\n\n\n\n\nThis final plot defines the risk ranking by sorting these companies based on their median absolute daily returns. The dashed line represents the sector median, marking the middle point of volatility for this group of companies to provide a clear point of reference for comparison.\nThis visualization should enable readers to identify the sector’s stable points versus its more unpredictable points. Stocks further to the right of the dashed line (sector median) are objectively more volatile than others more to the left, so they require a higher risk tolerance. This ranking helps investors to see exactly where a company like Tesla (TSLA) or NVIDIA is on a scale of risk compared to established companies like Microsoft (MSFT) or Google (AAPL)."
+  },
+  {
+    "objectID": "posts/big-tech-stock-prices/index.html#conclusion",
+    "href": "posts/big-tech-stock-prices/index.html#conclusion",
+    "title": "Big Tech Stock Prices",
+    "section": "Conclusion",
+    "text": "Conclusion\nA potential flaw in my exploration is that I used \\(\\frac{close - open}{open}\\) to calculate the daily return variable, but this only accounts for what happens with prices from open to close . The formula doesn’t consider what happens with prices when the market is closed, which could be significant.\nWith additional data and more time, I would be interested in including additional data to support and contextualize the the adjusting closing price trends. This could include relevant news, social media mentions, and other supporting data that might help explain what else was going on during extreme market days (outliers in Figures 2 and 3) and why they happened."
+  },
+  {
+    "objectID": "posts/big-tech-stock-prices/index.html#connection-to-class-ideas",
+    "href": "posts/big-tech-stock-prices/index.html#connection-to-class-ideas",
+    "title": "Big Tech Stock Prices",
+    "section": "Connection to Class Ideas",
+    "text": "Connection to Class Ideas\n\nData-to-Ink Ratio: I aimed to minimize data-to-ink ratio in my visualizations by making the plots simple but informative, so they are better remembered and more enjoyable for viewers.\nAppropriate Color Scales: I used a qualitative color scale to distinguish between companies because they are unordered categories."
   },
   {
     "objectID": "posts/post-with-code/index.html",
@@ -21,10 +49,17 @@
     "text": "This is a post with executable code.\n\n1 + 1\n\n[1] 2"
   },
   {
+    "objectID": "posts/welcome/index.html",
+    "href": "posts/welcome/index.html",
+    "title": "Welcome To My Blog",
+    "section": "",
+    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "stat334_blog",
     "section": "",
-    "text": "Post With Code\n\n\n\nnews\n\ncode\n\nanalysis\n\n\n\n\n\n\n\n\n\nJan 28, 2026\n\n\nHarlow Malloc\n\n\n\n\n\n\n\n\n\n\n\n\nWelcome To My Blog\n\n\n\nnews\n\n\n\n\n\n\n\n\n\nJan 25, 2026\n\n\nTristan O’Malley\n\n\n\n\n\nNo matching items"
+    "text": "Big Tech Stock Prices\n\n\n\ncode\n\nanalysis\n\n\n\n\n\n\n\n\n\nFeb 6, 2026\n\n\nHoney Orser\n\n\n\n\n\n\n\n\n\n\n\n\nPost With Code\n\n\n\nnews\n\ncode\n\nanalysis\n\n\n\n\n\n\n\n\n\nJan 28, 2026\n\n\nHarlow Malloc\n\n\n\n\n\n\n\n\n\n\n\n\nWelcome To My Blog\n\n\n\nnews\n\n\n\n\n\n\n\n\n\nJan 25, 2026\n\n\nTristan O’Malley\n\n\n\n\n\nNo matching items"
   }
 ]
