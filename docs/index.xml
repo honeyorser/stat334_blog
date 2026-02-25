@@ -5,7 +5,7 @@
       xmlns:dc="http://purl.org/dc/elements/1.1/" 
       version="2.0">
 <channel>
-<title>stat334_blog</title>
+<title>Data Viz Blog</title>
 <link>https://your-website-url.example.com/</link>
 <atom:link href="https://your-website-url.example.com/index.xml" rel="self" type="application/rss+xml"/>
 <description>A blog built with Quarto</description>
@@ -483,6 +483,22 @@ font-style: inherit;">1</span></span></code></pre></div></div>
   <category>news</category>
   <guid>https://your-website-url.example.com/posts/welcome/</guid>
   <pubDate>Sun, 25 Jan 2026 05:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Untitled</title>
+  <link>https://your-website-url.example.com/posts/big-tech-stock-prices/Untitled.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+
+
+
+ ]]></description>
+  <guid>https://your-website-url.example.com/posts/big-tech-stock-prices/Untitled.html</guid>
+  <pubDate>Wed, 25 Feb 2026 18:24:34 GMT</pubDate>
 </item>
 </channel>
 </rss>

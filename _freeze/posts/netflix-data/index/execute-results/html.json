@@ -1,0 +1,17 @@
+{
+  "hash": "909e3690a2c94d4dfd6ef8b1a6ba9729",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"index\"\nauthor: \"Honey Orser\"\ndate: \"2026-02-18\"\ncateogies: [code, analysis]\n---\n\n\n\n## Introduction\n\n[What have we been watching on Netflix?](https://github.com/rfordatascience/tidytuesday/blob/main/data/2025/2025-07-29/readme.md) \n\nquestion: How does the performance of globally available content compare to regionally restricted titles? Do global releases consistently outperform regional ones?\n\nvariables of interest:\n  - title\n  - available_globally\n  - hours_viewed\n  - views\n\n## Visualizations\n\n\n::: {.cell}\n\n```{.r .cell-code}\nmovies_clean <- movies |>\n  filter(title != \"Title\") |>\n  mutate(available_globally = as.factor(available_globally),\n         hours_viewed_100000s = hours_viewed / 100000,\n         views_100000s = views / 100000)\n\nmovies_clean |> group_by(available_globally) |>\n  ggplot(aes(x = available_globally, y = views_100000s)) +\n  geom_boxplot()\n```\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning: Removed 3 rows containing non-finite outside the scale range\n(`stat_boxplot()`).\n```\n\n\n:::\n\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-1-1.png){width=672}\n:::\n:::\n\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -121,4 +121,4 @@ With additional data and more time, I would be interested in including additiona
 
 -   **Data-to-Ink Ratio:** I aimed to minimize data-to-ink ratio in my visualizations by making the plots simple but informative, so they are better remembered and more enjoyable for viewers.
 
--   **Appropriate Color Scales:** I used a qualitative color scale to distinguish between companies because they are unordered categories. 
+-   **Appropriate Color Scales:** I used a qualitative color scale to distinguish between companies because they are unordered categories.
