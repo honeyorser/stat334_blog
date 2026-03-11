@@ -1,0 +1,142 @@
+---
+title: "Milano-Cortina 2026 Winter Olympics"
+author: "Honey Orser"
+date: "2026-03-11"
+categories: [code, analysis]
+---
+
+```{r setup, include = FALSE}
+
+library(tidyverse)
+library(knitr)
+
+schedule <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2026/2026-02-10/schedule.csv')
+
+schedule
+```
+
+## Introduction
+
+My exploratory analysis in this blog focuses on the event scheduling dynamics of the Milano-Cortina 2026 Olympics, as I am aiming to understand how the Olympic Games are structured -- ranging from the number of events across different sport disciplines to the temporal distribution of medal awarding events and the typical time commitments required for various types of event sessions.
+
+For my exploration, I am looking at [Milano-Cortina 2026 Winter Olympics Data](https://github.com/chendaniely/olympics-2026), which consits of $1,866$ observations of 21 variables, and contains structured data about the Olympics schedule, events, and venues across all included sport disciplines. 
+
+I am investigating three questions of interest in my analysis of the Milano-Cortina 2026 Winter Olympics schedule data:
+
+  * Which sport disciplines have the most events scheduled, and of those,
+  what proportion are dedicated to training versus live competition?
+  
+  * How are medal events distributed across the Olympic calendar -- are they evenly
+  distributed?
+  
+  *  What is the typical duration of different types of Olympic events, and does this duration
+  vary based on whether the event is for training, awarding medals, or live competition?
+
+To answer these questions, I am focusing on the six variables -- `discipline_name`, `is_training`, `is_medal_event`, `date`, `start_datetime_local`, and `end_datetime_local`. 
+
+When interpreting the following visualizations, it is important to note that *events* in the context of this data set refer to scheduled sessions, not necessarily a single race. For example, one Ice Hockey event might be one 3 hour session that covers one game, while one *Alpine Skiing* event might cover dozens of individual runs. 
+
+## Visualizations
+
+```{r}
+most_events <- schedule |>
+  mutate(training_ind = if_else(is_training == TRUE, "Training", "Competition")) |>
+  group_by(discipline_name, training_ind) |>
+  summarise(n_events = n(), .groups = "drop") |>
+  mutate(discipline_name = fct_reorder(discipline_name, n_events, .fun = sum))
+
+ggplot(data = most_events, aes(x = discipline_name, y = n_events, fill = training_ind)) +
+  geom_col(position = "stack", color = "midnightblue") +
+  coord_flip() +
+  theme_minimal() +
+  labs(x = NULL,
+       y = "Number of Events",
+       title = "Events per Discipline",
+       fill = "Event Type") +
+  scale_fill_manual(values = c("Training" = "midnightblue",
+                               "Competition" = "mintcream"))
+```
+
+This visualization reveals that Curling, Freestyle Skiing, and Ice Hockey are the disciplines with the most scheduled events at the 2026 Winter Olympics, with Curling having the highest number of events by about 200. Only some disciplines have official training sessions, indicated by the dark blue sections of the bars. These disciplines include Bobsleigh, Luge, Ski Jumping, Alpine Skiing, Skeleton, and Nordic Combined. 
+
+```{r}
+training_props <- schedule |>
+  mutate(training_ind = if_else(is_training == TRUE, "Training", "Competition")) |>
+  group_by(discipline_name, training_ind) |>
+  summarise(n_events = n(), .groups = "drop") |>
+  group_by(discipline_name) |>
+  mutate(total_discipline_events = sum(n_events)) |>
+  filter(training_ind == "Training") |>
+  mutate(prop_training = n_events / total_discipline_events) |>
+  select(discipline_name, prop_training) |>
+  arrange(desc(prop_training))
+
+kable(training_props)
+```
+
+The above table shows the breakdown of proportion of training events for disciplines which have them scheduled, highlighting that Luge, Bobsleigh, and Skeleton disciplines have over half of their scheduled events as official training sessions.
+
+```{r}
+medal_events_dist <- schedule |>
+  filter(is_medal_event == TRUE) |>
+  count(date)
+
+ggplot(data = medal_events_dist, aes(x = date, y = n)) +
+  geom_col(fill = "mintcream", color = "midnightblue") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  scale_x_date(date_breaks = "1 day", date_labels = "%d %b %Y") + 
+  theme_minimal() +
+  labs(x = "Date",
+       y = "Number of Medal Events",
+       title = "Distribution of Medal Events Across Days of the Olympics") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+This visualization tracks the frequency of medal events across the 2026 Winter Olympics calendar. It reveals a buildup in the competition schedule; the olympic games begin with a relatively quiet opening period dominated by preliminaries, eventually leading into  high-density peak days from February 8th through February 20th, and finally slowing down with a quiet ending period during the last days as the games draw to a close.
+
+```{r}
+events_duration <- schedule |>
+  
+  mutate(duration_mins = as.numeric(difftime(end_datetime_local, 
+                                             start_datetime_local,
+                                             units = "mins")),
+         event_type = case_when(
+           is_medal_event ~ "Medal",
+           is_training ~ "Training",
+           TRUE ~ "Competition"
+         )) |>
+  filter(!is.na(duration_mins), duration_mins > 0)
+
+ggplot(data = events_duration, aes(x = event_type, y = duration_mins)) +
+  geom_violin(alpha = 0.3, color = "midnightblue", fill = "mintcream") +
+  geom_boxplot(width = 0.2, alpha = 0.7, color = "midnightblue", fill = "mintcream") +
+  theme_minimal() +
+  labs(x = "Event Type",
+       y = "Duration (minutes)",
+       title = "Typical Duration of Different Types of Olympic Events") +
+  theme(legend.position = "none")
+```
+
+This visualization compares the time commitments of different event categories, revealing that Competition and Medal events are generally longer and less variable than Training sessions. While training sessions tend to be tightly clustered around a standard 60-to-120-minute window, competition and medal events show much longer spreads, indicating a broader range of durations. Notably, the Medal category has the lowest median duration and narrowest spread, suggesting that award ceremonies have an objective process and are relatively straight forward. However, there are some outliers in the Medal category, indicating that some award ceremonies take much longer, potentially due to extended flower presentations and/or athelte interviews.
+
+## Conclusion
+
+While my three visualizations provide a strong overview, there are some inherent limitations to my approach with this data. Treating every row as one *event* is potentially misleading because one Ice Hockey event could consist of one game, whereas one Alpine Skiing event could consist of several individual runs. Another potential flaw is that my analysis relies on `local_datetime`. If certain events were recorded using different offsets or if there were data entry errors in the `end_datetime_local` leading to 0-minute durations, they were filtered out, potentially ignoring valid but poorly formatted data points.
+
+With more time and/or additional data sets, I would expand my exploratory analysis to look at weather impact on events. Winter sports are very reliant on weather conditions such temperature, wind, and snow. I would be interested in comparing the schedule with climate data for the Milano and Cortina regions to see if I could predict which, if any, events are at risk for scheduling delays or cancellations.
+
+## Connection to Class Ideas
+
+  * My visualizations use appropriate geometric objects (geoms) to match the data types of
+  questions of interest. I used bar charts (geom_col) for the number of scheduled events and
+  distribution of medal events because bar charts are best for comparing magnitudes and
+  frequencies across categories over time. I used violin olots and boxplots to show the
+  density and variance of typical time duration for different types of events.
+  
+  * My *Events per Discipline* visualization utilizes `fct_reorder`. In class, we learned that
+  alphabetical sorting is rarely the most informative choice. By reordering the sport
+  disciplines by the total number of scheduled events, I am using spatial positioning to
+  immediately highlight the disciplines with the highest number of events, allowing readers to
+  identify trends much more quickly.
+
+
