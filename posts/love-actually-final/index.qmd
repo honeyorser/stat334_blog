@@ -1,0 +1,158 @@
+---
+title: "Love Actually *Is* All Around"
+author: "Honey Orser"
+date: "2026-04-04"
+categories: [code, analysis]
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(tidyverse)
+library(plotly)
+library(tidygraph)
+library(ggraph)
+
+## ------ appearances data ------
+
+appearances <- read_csv("love_actually_appearances.csv")
+
+appearances <- appearances |>
+  slice(1:71) |>
+  mutate(scene_number = row_number()) |>
+  pivot_longer(cols = 2:15, names_to = "actors", values_to = "appearances") |>
+  mutate(appearances = if_else(appearances == "TRUE", 1, 0)) |>
+  replace_na(list(appearances = 0)) |>
+  mutate(appearances = as.factor(appearances),
+         actors = gsub("_", " ", actors),
+         actors = str_to_title(actors))
+
+scenes <- appearances |>
+  filter(appearances == 1) |>
+  arrange(actors, scene_number) |>
+  group_by(actors) |>
+  mutate(next_scene = lead(scene_number)) |>
+  ungroup() |>
+  filter(!is.na(next_scene))    
+
+order_of_appearance <- appearances |>
+  filter(appearances == 1) |>
+  group_by(actors) |>
+  summarize(first_scene = min(scene_number)) |>
+  arrange(desc(first_scene)) |> 
+  pull(actors)
+
+scenes <- scenes |>
+  mutate(actors = factor(actors, levels = order_of_appearance))
+
+appearance_points <- appearances |>
+  filter(appearances == 1) |>
+  mutate(actors = factor(actors, levels = order_of_appearance))
+
+## ------ adjacencies data ------
+
+adjacencies <- read_csv("love_actually_adjacencies.csv")
+
+actors_long <- adjacencies |>
+  pivot_longer(cols = -actors,
+               names_to = "actor2",
+               values_to = "weight") |>
+  rename(actor1 = actors) |>
+  filter(!is.na(weight)) |>
+  mutate(actor1 = str_to_title(gsub("_", " ", actor1)),
+         actor2 = str_to_title(gsub("_", " ", actor2)))
+
+nodes <- actors_long |>
+  filter(actor1 == actor2) |>
+  dplyr::select(name = actor1, total_scenes = weight) |>
+  mutate(community = case_when(
+    name %in% c("Hugh Grant", "Emma Thompson", "Liam Neeson", 
+                "Alan Rickman", "Heike Makatsch", "Rowan Atkinson") ~ "community 1",
+    name %in% c("Kris Marshall", "Abdul Salis", "Colin Firth", "Keira Knightley") ~ "community 2",
+    .default = "floaters"
+  ))
+
+edges <- actors_long |>
+  filter(actor1 != actor2, weight > 0) |>
+  dplyr::select(from = actor1, to = actor2, weight)
+
+network_obj <- tbl_graph(nodes = nodes, edges = edges, directed = FALSE)
+```
+
+## Introduction
+
+*Love Actually* (2003), written and directed by Richard Curtis, is a romantic comedy film set in London during the month leading up to Christmas. Rather than following a singular plot, Curtis stitched together nine loosely interconnected love stories, each examining a different facet of the one emotion common to all people --- *love*. The film moves between these threads in short scenes, sporadically letting characters from one story cross paths with characters from another.
+
+That structure --- many small stories, occasional intersections --- makes the film a perfect candidate for **network analysis**. Each character is a node; each shared scene is an edge. If the storylines really are distinct, the network should reveal that as visible clustering. And if certain characters are doing the work of weaving the parallel narratives together, the network should reveal that too.
+
+For this analysis I worked with two CSV files released by [FiveThirtyEight on GitHub](https://github.com/fivethirtyeight/data/tree/master/love-actually). The first, [`love_actually_appearances.csv`](https://github.com/fivethirtyeight/data/blob/master/love-actually/love_actually_appearances.csv), tracks which of 14 main characters appear in each of the film's 71 scenes, plus a short text description of each scene --- giving me 994 character-scene observations after tidying. The second, [`love_actually_adjacencies.csv`](https://github.com/fivethirtyeight/data/blob/master/love-actually/love_actually_adjacencies.csv), is a 14 × 14 matrix where the diagonal stores each character's total scene count and the off-diagonal entries count co-appearances.
+
+With the tidied data frames, I am investigating two questions of interest:
+
+  * *When* does each character appear across the 71 scenes, and what does the rhythm of their screen time look
+  like?
+  
+  * *Who* shares scenes with whom, and do those co-appearances cluster into the distinct storylines the film is
+  built around?
+
+## Visualizations
+
+```{r}
+s <- ggplot() +
+  geom_segment(data = scenes,
+               aes(x = scene_number, xend = next_scene,
+                   y = actors, yend = actors),
+               color = "magenta1") +
+  geom_point(data = appearance_points,
+             aes(x = scene_number, y = actors,
+                 text = paste(scene_number)),
+             color = "red1") +
+  labs(title = "Scene Appearances",
+       x = "Scene Number",
+       y = NULL) +
+  theme_minimal()
+
+ggplotly(s, tooltip = "text")
+```
+
+Each red dot is a single scene appearance --- hover over any of them to see the exact scene number. Each magenta segment connects consecutive appearances by the same character, so the segments visualize the *gaps* in their screen time: a long segment means a long absence from the screen. The y-axis is sorted by order of first on-screen appearance, producing a diagonal sweep across the plot.
+
+A few patterns jump out. Hugh Grant (the Prime Minister, David), Liam Neeson (the recently widowed stepfather, Daniel), Emma Thompson (Karen, whose husband is unfaithful), and Alan Rickman (Karen's husband, Harry) have densely packed appearances throughout the film, suggesting their storylines provide its structural backbone. Their visual density on the plot mirrors their narrative density --- these are the characters whose arcs unfold gradually across the entire month-before-Christmas timeline rather than in concentrated bursts.
+
+By contrast, characters like Rowan Atkinson (the overly meticulous jewelry salesman, who first appears all the way at scene 47) appear in tight, late clusters. Their stories function more like vignettes, resolving quickly. The diagonal sweep of the plot is itself a visual artifact of the film's storytelling structure: Curtis introduces his characters in a deliberate sequence, and sorting on first-appearance order reproduces the audience's experience of meeting them one by one.
+
+```{r}
+set.seed(6)
+
+ggraph(network_obj, layout = "fr") +
+  geom_edge_link(aes(width = weight), alpha = 0.4,
+                 color = "midnightblue", show.legend = FALSE) +
+  geom_node_point(aes(color = community, size = total_scenes),
+                  show.legend = FALSE) +
+  geom_node_text(aes(label = gsub(" ", "\n", name)), size = 2.5) +
+  scale_edge_width(range = c(0.5, 3)) +
+  scale_size(range = c(15, 22)) +
+  scale_color_manual(values = c("community 1" = "violet",
+                                "community 2" = "gold",
+                                "floaters" = "mediumspringgreen")) +
+  theme_void()
+```
+
+Edge thickness encodes co-appearance count, node size encodes the total number of scenes the character appears in, and color encodes a community label I assigned by hand based on my knowledge of the film: a violet group of six characters who share storylines, a gold group of four characters from a separate narrative thread, and a "floater" group in spring green for characters who don't sit cleanly in either.
+
+The layout confirms my manual labels. The violet cluster (Hugh Grant, Emma Thompson, Liam Neeson, Alan Rickman, Heike Makatsch, Rowan Atkinson) sits as a tightly-bound group on one side of the plot, while the gold cluster (Kris Marshall, Abdul Salis, Colin Firth, Keira Knightley) sits separately. The spatial separation between these two regions of the plot was *not* something I encoded into the data --- it emerged purely from the co-appearance counts. This is independent visual evidence that the storylines really are separable. 
+
+The spring green cluster sit between the two main clusters in the layout, and that position is its own piece of evidence: these are the characters doing most of the structural work of weaving the parallel narratives together, the points of intersection that turn nine separate stories into a single film.
+
+## Conclusion
+
+There are several limitations worth naming. The community assignments are mine, not the output of a community detection algorithm --- though the force-directed layout independently confirms the clusters. The data itself is also coarse: a "scene" is a binary appearance, with no information about screen time, dialogue, or whether two co-listed characters actually share a frame. It also lacks contextual labels like character names or relationship types between characters. And notably, the data excludes Martine McCutcheon (Natalie, the junior staff member Hugh Grant's character falls in love with) --- a main character whose storyline matters to the film, making this dataset less comprehensive than it should be.
+
+Given more time, I'd extend this in two directions. First, I'd run a true community detection algorithm and compare its output to my manual labels. While I'm confident in my groupings, a concrete, reproducible categorization would strengthen the analysis. Second, I'd enrich the data with screen-time, dialogue, and relationship information --- screen-time and dialogue would let me weight edges by interaction quality instead of just co-presence, and character names and relationship labels would let me convert the network into a plotly graph where users could hover over nodes for character context and over edges for relationship details.
+
+## Connection to Class Ideas
+
+Both visualizations were built with class principles in mind. I used what we learned about plotly to make the appearancs segment plot more interactive for users, and I used what we learned about network graphs to construct the character network visualization. In both cases, my goal was a chart that does narrative work, not just a chart that displays data.
+
+I also constructed a Shiny app, applying what we learned in class to make this analysis more explorable for users, and used a close read document for my written report, as we mentioned that in class as well. We learned that the close read document structure is best for *storytelling* which is what my analysis aims to do.
+
+
